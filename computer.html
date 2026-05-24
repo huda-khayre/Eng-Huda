@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Lab Booking System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --available: #10b981;
+            --selected: #3b82f6;
+            --occupied: #ef4444;
+            --background: #75b0e8;
+            --surface: #485660;
+            --text: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary);
+        }
+
+        .setup-section {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: 600;
+        }
+
+        select {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .sample-seat {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .screen {
+            width: 80%;
+            height: 8px;
+            background: #cbd5e1;
+            margin: 0 auto 2rem auto;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 30px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .seat {
+            background-color: var(--available);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s, background-color 0.2s;
+            user-select: none;
+        }
+
+        .seat:hover:not(.occupied) {
+            transform: scale(1.05);
+        }
+
+        .seat.selected {
+            background-color: var(--selected);
+        }
+
+        .seat.occupied {
+            background-color: var(--occupied);
+            cursor: not-allowed;
+        }
+
+        .booking-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #f1f5f9;
+            padding-top: 1.5rem;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Computer Lab Booking</h1>
+
+    <!-- Time Slot Selection -->
+    <div class="setup-section">
+        <label for="time-slot">Select Time Slot:</label>
+        <select id="time-slot">
+            <option value="09:00">09:00 AM - 11:00 AM</option>
+            <option value="11:00">11:00 AM - 01:00 PM</option>
+            <option value="14:00">02:00 PM - 04:00 PM</option>
+            <option value="16:00">04:00 PM - 06:00 PM</option>
+        </select>
+    </div>
+
+    <!-- Status Legend -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="sample-seat" style="background: var(--available)"></div> Available
+        </div>
+        <div class="legend-item">
+            <div class="sample-seat" style="background: var(--selected)"></div> Your Selection
+        </div>
+        <div class="legend-item">
+            <div class="sample-seat" style="background: var(--occupied)"></div> Occupied
+        </div>
+    </div>
+
+    <!-- Lab Layout -->
+    <div class="screen">LAB FRONT / INSTRUCTOR STAGE</div>
+    <div class="grid-container" id="seating-grid"></div>
+
+    <!-- Action Bar -->
+    <div class="booking-panel">
+        <div>
+            <p id="summary-text">No seats selected</p>
+        </div>
+        <button class="btn" id="book-btn" disabled>Confirm Booking</button>
+    </div>
+</div>
+
+<script>
+    // System Configurations
+    const TOTAL_SEATS = 20;
+    
+    // Mock Database: Tracks occupied seats per time slot
+    const labDatabase = {
+        "09:00": [2, 5, 12],
+        "11:00": [1, 2, 3, 4, 18, 19],
+        "14:00": [7, 8, 9],
+        "16:00": []
+    };
+
+    let selectedSeats = [];
+    
+    // DOM Elements
+    const timeSlotSelect = document.getElementById('time-slot');
+    const seatingGrid = document.getElementById('seating-grid');
+    const summaryText = document.getElementById('summary-text');
+    const bookBtn = document.getElementById('book-btn');
+
+    // Render the grid based on selected time slot
+    function renderGrid() {
+        seatingGrid.innerHTML = '';
+        selectedSeats = [];
+        updateSummary();
+
+        const currentSlot = timeSlotSelect.value;
+        const occupiedSeats = labDatabase[currentSlot] || [];
+
+        for (let i = 1; i <= TOTAL_SEATS; i++) {
+            const seat = document.createElement('div');
+            seat.classList.add('seat');
+            seat.innerText = `C${i}`;
+            seat.dataset.seatNumber = i;
+
+            if (occupiedSeats.includes(i)) {
+                seat.classList.add('occupied');
+            } else {
+                seat.addEventListener('click', () => toggleSeat(seat, i));
+            }
+
+            seatingGrid.appendChild(seat);
+        }
+    }
+
+    // Handle seat click
+    function toggleSeat(seatElement, seatNumber) {
+        if (seatElement.classList.contains('selected')) {
+            seatElement.classList.remove('selected');
+            selectedSeats = selectedSeats.filter(id => id !== seatNumber);
+        } else {
+            seatElement.classList.add('selected');
+            selectedSeats.push(seatNumber);
+        }
+        updateSummary();
+    }
+
+    // Update text and button states
+    function updateSummary() {
+        if (selectedSeats.length === 0) {
+            summaryText.innerText = "No seats selected";
+            bookBtn.disabled = true;
+        } else {
+            summaryText.innerText = `Selected Seats: ${selectedSeats.map(id => `C${id}`).join(', ')}`;
+            bookBtn.disabled = false;
+        }
+    }
+
+    // Handle final booking submission
+    function handleBooking() {
+        const currentSlot = timeSlotSelect.value;
+        
+        // Save selections to database
+        labDatabase[currentSlot] = [...labDatabase[currentSlot], ...selectedSeats];
+        
+        alert(`Successfully booked seats: ${selectedSeats.map(id => `C${id}`).join(', ')} for the ${currentSlot} slot!`);
+        
+        // Refresh UI
+        renderGrid();
+    }
+
+    // Event Listeners
+    timeSlotSelect.addEventListener('change', renderGrid);
+    bookBtn.addEventListener('click', handleBooking);
+
+    // Initial load
+    renderGrid();
+</script>
+
+</body>
+</html>
