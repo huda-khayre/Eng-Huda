@@ -1,1 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Timetable Generator</title>
 
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body{
+      background:#f4f7fb;
+      padding:30px;
+      color:#333;
+    }
+
+    .container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:25px;
+      color:#1e3a8a;
+    }
+
+    .form-box{
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+      margin-bottom:25px;
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:15px;
+    }
+
+    input, select, button{
+      padding:12px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      font-size:15px;
+    }
+
+    button{
+      background:#2563eb;
+      color:white;
+      border:none;
+      cursor:pointer;
+      transition:0.3s;
+      font-weight:bold;
+    }
+
+    button:hover{
+      background:#1d4ed8;
+    }
+
+    .table-container{
+      overflow-x:auto;
+      background:white;
+      padding:20px;
+      border-radius:10px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
+    }
+
+    th, td{
+      border:1px solid #ddd;
+      padding:15px;
+      text-align:center;
+    }
+
+    th{
+      background:#1e3a8a;
+      color:white;
+    }
+
+    td{
+      height:80px;
+      vertical-align:top;
+      position:relative;
+    }
+
+    .subject-box{
+      background:#dbeafe;
+      color:#1e3a8a;
+      padding:8px;
+      border-radius:6px;
+      font-size:14px;
+      margin-top:5px;
+      font-weight:bold;
+    }
+
+    .time{
+      display:block;
+      font-size:12px;
+      margin-top:5px;
+      color:#555;
+    }
+
+    .delete-btn{
+      background:red;
+      margin-top:15px;
+      width:100%;
+    }
+
+    .delete-btn:hover{
+      background:darkred;
+    }
+
+    @media(max-width:768px){
+      body{
+        padding:15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Student Timetable Generator</h1>
+
+  <div class="form-box">
+
+    <div class="form-grid">
+
+      <input type="text" id="subject" placeholder="Subject Name">
+
+      <select id="day">
+        <option value="">Select Day</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+      </select>
+
+      <input type="time" id="startTime">
+
+      <input type="time" id="endTime">
+
+      <button onclick="addClass()">Add Class</button>
+
+    </div>
+
+  </div>
+
+  <div class="table-container">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Time Slot</th>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+          <th>Saturday</th>
+        </tr>
+      </thead>
+
+      <tbody id="scheduleBody">
+
+      </tbody>
+    </table>
+
+    <button class="delete-btn" onclick="clearSchedule()">
+      Clear Full Schedule
+    </button>
+
+  </div>
+
+</div>
+
+<script>
+
+  const scheduleBody = document.getElementById("scheduleBody");
+
+  const timeSlots = [
+    "08:00 - 09:00",
+    "09:00 - 10:00",
+    "10:00 - 11:00",
+    "11:00 - 12:00",
+    "12:00 - 01:00",
+    "01:00 - 02:00",
+    "02:00 - 03:00",
+    "03:00 - 04:00"
+  ];
+
+  function createTable() {
+
+    scheduleBody.innerHTML = "";
+
+    timeSlots.forEach(slot => {
+
+      let row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td><strong>${slot}</strong></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      `;
+
+      scheduleBody.appendChild(row);
+    });
+  }
+
+  createTable();
+
+  function addClass() {
+
+    const subject = document.getElementById("subject").value;
+    const day = document.getElementById("day").value;
+    const startTime = document.getElementById("startTime").value;
+    const endTime = document.getElementById("endTime").value;
+
+    if(!subject || !day || !startTime || !endTime){
+      alert("Please fill all fields");
+      return;
+    }
+
+    const days = {
+      "Monday":1,
+      "Tuesday":2,
+      "Wednesday":3,
+      "Thursday":4,
+      "Friday":5,
+      "Saturday":6
+    };
+
+    const rows = scheduleBody.querySelectorAll("tr");
+
+    rows.forEach(row => {
+
+      const slot = row.cells[0].innerText;
+
+      const slotStart = slot.split(" - ")[0];
+
+      if(slotStart === startTime){
+
+        row.cells[days[day]].innerHTML = `
+          <div class="subject-box">
+            ${subject}
+            <span class="time">${startTime} - ${endTime}</span>
+          </div>
+        `;
+      }
+
+    });
+
+    document.getElementById("subject").value = "";
+    document.getElementById("day").value = "";
+    document.getElementById("startTime").value = "";
+    document.getElementById("endTime").value = "";
+
+  }
+
+  function clearSchedule(){
+
+    createTable();
+
+  }
+
+</script>
+
+</body>
+</html>
