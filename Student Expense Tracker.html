@@ -1,1 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Expense Tracker</title>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:Arial, sans-serif;
+    }
+
+    body{
+        background:#f0f4f8;
+        padding:20px;
+    }
+
+    .container{
+        max-width:1000px;
+        margin:auto;
+    }
+
+    h1{
+        text-align:center;
+        margin-bottom:20px;
+        color:#2c3e50;
+    }
+
+    .card{
+        background:#fff;
+        padding:20px;
+        border-radius:12px;
+        box-shadow:0 4px 10px rgba(0,0,0,0.1);
+        margin-bottom:20px;
+    }
+
+    .form-group{
+        margin-bottom:15px;
+    }
+
+    label{
+        display:block;
+        margin-bottom:5px;
+        font-weight:bold;
+    }
+
+    input, select{
+        width:100%;
+        padding:10px;
+        border:1px solid #ccc;
+        border-radius:8px;
+        font-size:16px;
+    }
+
+    button{
+        width:100%;
+        padding:12px;
+        border:none;
+        border-radius:8px;
+        background:#3498db;
+        color:white;
+        font-size:16px;
+        cursor:pointer;
+    }
+
+    button:hover{
+        background:#2980b9;
+    }
+
+    .summary{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+        gap:15px;
+        margin-bottom:20px;
+    }
+
+    .summary-box{
+        background:#fff;
+        padding:20px;
+        border-radius:12px;
+        box-shadow:0 4px 10px rgba(0,0,0,0.1);
+        text-align:center;
+    }
+
+    .summary-box h2{
+        margin-bottom:10px;
+        color:#555;
+    }
+
+    .summary-box p{
+        font-size:28px;
+        font-weight:bold;
+        color:#27ae60;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:15px;
+    }
+
+    table th, table td{
+        border:1px solid #ddd;
+        padding:12px;
+        text-align:center;
+    }
+
+    table th{
+        background:#3498db;
+        color:white;
+    }
+
+    .delete-btn{
+        background:#e74c3c;
+        padding:6px 10px;
+        border:none;
+        border-radius:6px;
+        color:white;
+        cursor:pointer;
+    }
+
+    .delete-btn:hover{
+        background:#c0392b;
+    }
+
+    canvas{
+        margin-top:20px;
+    }
+
+    @media(max-width:768px){
+        table{
+            font-size:14px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎓 Student Expense Tracker</h1>
+
+    <!-- Add Expense -->
+    <div class="card">
+
+        <div class="form-group">
+            <label>Expense Name</label>
+            <input type="text" id="expenseName" placeholder="Example: Lunch">
+        </div>
+
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="expenseAmount" placeholder="Example: 15">
+        </div>
+
+        <div class="form-group">
+            <label>Category</label>
+            <select id="expenseCategory">
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Books</option>
+                <option>Entertainment</option>
+                <option>Other</option>
+            </select>
+        </div>
+
+        <button onclick="addExpense()">Add Expense</button>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary">
+
+        <div class="summary-box">
+            <h2>Total Spending</h2>
+            <p id="totalSpending">$0</p>
+        </div>
+
+        <div class="summary-box">
+            <h2>Total Entries</h2>
+            <p id="totalEntries">0</p>
+        </div>
+
+    </div>
+
+    <!-- Expense Table -->
+    <div class="card">
+        <h2>Daily Spending</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="expenseTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Chart -->
+    <div class="card">
+        <h2>Expense Chart</h2>
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+</div>
+
+<script>
+
+let expenses = [];
+
+// Add Expense
+function addExpense(){
+
+    const name = document.getElementById("expenseName").value;
+    const amount = document.getElementById("expenseAmount").value;
+    const category = document.getElementById("expenseCategory").value;
+
+    if(name === "" || amount === ""){
+        alert("Please fill all fields");
+        return;
+    }
+
+    const expense = {
+        id: Date.now(),
+        name,
+        amount: Number(amount),
+        category
+    };
+
+    expenses.push(expense);
+
+    document.getElementById("expenseName").value = "";
+    document.getElementById("expenseAmount").value = "";
+
+    displayExpenses();
+    updateSummary();
+    updateChart();
+}
+
+// Display Expenses
+function displayExpenses(){
+
+    const table = document.getElementById("expenseTable");
+
+    table.innerHTML = "";
+
+    expenses.forEach(expense => {
+
+        table.innerHTML += `
+            <tr>
+                <td>${expense.name}</td>
+                <td>$${expense.amount}</td>
+                <td>${expense.category}</td>
+                <td>
+                    <button class="delete-btn" onclick="deleteExpense(${expense.id})">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// Delete Expense
+function deleteExpense(id){
+
+    expenses = expenses.filter(expense => expense.id !== id);
+
+    displayExpenses();
+    updateSummary();
+    updateChart();
+}
+
+// Update Summary
+function updateSummary(){
+
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    document.getElementById("totalSpending").innerText = "$" + total;
+    document.getElementById("totalEntries").innerText = expenses.length;
+}
+
+// Chart
+const ctx = document.getElementById("expenseChart").getContext("2d");
+
+const expenseChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "Expenses",
+            data: [],
+            backgroundColor: [
+                "#3498db",
+                "#2ecc71",
+                "#f39c12",
+                "#9b59b6",
+                "#e74c3c"
+            ]
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+// Update Chart
+function updateChart(){
+
+    const categoryTotals = {};
+
+    expenses.forEach(expense => {
+
+        if(categoryTotals[expense.category]){
+            categoryTotals[expense.category] += expense.amount;
+        } else {
+            categoryTotals[expense.category] = expense.amount;
+        }
+    });
+
+    expenseChart.data.labels = Object.keys(categoryTotals);
+    expenseChart.data.datasets[0].data = Object.values(categoryTotals);
+
+    expenseChart.update();
+}
+
+</script>
+
+</body>
+</html>
