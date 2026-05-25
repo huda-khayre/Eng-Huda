@@ -1,1 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Attendance System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#eef2f7;padding:25px}
+.page-header{text-align:center;margin-bottom:30px}
+.page-header h1{color:#1565c0}
+.section{margin-bottom:30px}
+.section h2{color:#333;margin-bottom:12px}
+.card-form,.box{background:#fff;padding:25px;border-radius:15px;box-shadow:0 5px 15px rgba(0,0,0,.12)}
+input,select{width:100%;padding:12px;margin-bottom:15px;border:1px solid #ccc;border-radius:8px;font-size:15px}
+label{display:block;margin-bottom:6px;font-size:14px;color:#555;font-weight:bold}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+button{padding:12px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;background:#1565c0;color:#fff}
+.btn-cancel,.delete-btn{background:#d63031}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:12px;border-bottom:1px solid #ddd;text-align:center;font-size:14px}
+th{background:#1565c0;color:#fff}
+.delete-btn{padding:8px 12px;font-size:13px}
+.report-box{display:flex;justify-content:center;gap:40px;flex-wrap:wrap}
+.circle{width:190px;height:190px;border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff}
+.green-circle{background:linear-gradient(#2ecc71,#27ae60)}
+.red-circle{background:linear-gradient(#ff4d4d,#d63031)}
+.circle h1{font-size:55px}
+.circle p{font-size:18px;font-weight:bold}
+.empty{text-align:center;padding:20px;color:gray}
+.tab-menu{display:flex;justify-content:center;gap:12px;margin-bottom:30px}
+.tab-menu button{padding:10px 18px;border:none;border-radius:10px;cursor:pointer;background:#fff;color:#1565c0;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.tab-menu button.active{background:#1565c0;color:#fff}
+.nav-link{display:none}
+.present{color:#27ae60;font-weight:bold}
+.absent{color:#d63031;font-weight:bold}
+.hint{font-size:13px;color:#666;margin-bottom:12px}
+.msg{padding:10px 12px;border-radius:8px;margin-top:12px;display:none;font-size:14px}
+.msg-ok{background:#eafff0;color:#1e8449;border:1px solid #a9dfbf;display:block}
+.msg-err{background:#ffeaea;color:#c0392b;border:1px solid #ffb3b3;display:block}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+<h1>Student Registration & Attendance</h1>
+</header>
+<div class="tab-menu">
+<button id="tab-attendance" class="active" type="button">Attendance</button>
+<button id="tab-register" type="button">Register Student</button>
+</div>
+
+<section id="attendance-section" class="section">
+<h2>Add Attendance</h2>
+<div class="card-form">
+<p class="hint">Select student from list OR type ID, Name, Class. Then choose Present/Absent and Submit.</p>
+
+<label for="student_select">Select Student (optional)</label>
+<select id="student_select" onchange="pickStudent()">
+<option value="">-- Select or type below --</option>
+</select>
+
+<input type="text" id="student_id" placeholder="Student ID">
+<input type="text" id="student_name" placeholder="Full Name (e.g. Ali Hassan)">
+<input type="text" id="student_class" placeholder="Class">
+
+<select id="status">
+<option value="">Select Status</option>
+<option value="Present">Present</option>
+<option value="Absent">Absent</option>
+</select>
+
+<label for="date">Date (today only)</label>
+<input type="date" id="date" readonly>
+
+<div class="btn-row">
+<button type="button" id="btn-save" onclick="saveAttendance()">Submit</button>
+<button type="button" id="btn-cancel" class="btn-cancel" onclick="clearAttendanceForm()">Cancel</button>
+</div>
+</div>
+</section>
+
+<section id="register-section" class="section" style="display:none;">
+<h2>Register New Student</h2>
+<div class="card-form">
+<input type="text" id="reg_id" placeholder="Student ID">
+<input type="text" id="reg_name" placeholder="Full Name (e.g. Ali Hassan)">
+<input type="text" id="reg_class" placeholder="Class">
+<div class="btn-row">
+<button class="primary" type="button" id="btn-reg-save">Submit</button>
+<button class="secondary" type="button" id="btn-reg-cancel">Cancel</button>
+</div>
+<div id="reg-msg" class="msg"></div>
+</div>
+</section>
+
+<section class="section">
+<h2>Registered Students</h2>
+<div class="box">
+<table>
+<thead>
+<tr>
+<th>Student ID</th>
+<th>Name</th>
+<th>Class</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="students-body"></tbody>
+</table>
+<p id="no-students" class="empty">No students registered yet.</p>
+</div>
+</section>
+
+<section class="section">
+<h2>Attendance Records</h2>
+<div class="box">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Class</th>
+<th>Status</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="records-body"></tbody>
+</table>
+<p id="no-records" class="empty">No records yet.</p>
+</div>
+</section>
+
+<section class="section">
+<h2>Today's Attendance Report</h2>
+<div class="box">
+<div class="report-box">
+<div class="circle green-circle">
+<h1 id="present-count">0</h1>
+<p>Present Students</p>
+</div>
+<div class="circle red-circle">
+<h1 id="absent-count">0</h1>
+<p>Absent Students</p>
+</div>
+</div>
+</div>
+</section>
+
+<script>
+var STUDENTS_KEY = "registered_students";
+var ATT_KEY = "attendance_records";
+
+function pad2(n) {
+  return n < 10 ? "0" + n : "" + n;
+}
+
+function getToday() {
+  var d = new Date();
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+function loadStudents() {
+  try {
+    var raw = localStorage.getItem(STUDENTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveStudents(list) {
+  localStorage.setItem(STUDENTS_KEY, JSON.stringify(list));
+}
+
+function loadRecords() {
+  try {
+    var raw = localStorage.getItem(ATT_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveRecords(list) {
+  localStorage.setItem(ATT_KEY, JSON.stringify(list));
+}
+
+function getClassName(s) {
+  return s.student_class || s.class || "";
+}
+
+function loadDropdown() {
+  var sel = document.getElementById("student_select");
+  var list = loadStudents();
+  sel.innerHTML = '<option value="">-- Select or type below --</option>';
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = s.student_id + " - " + s.name + " (" + getClassName(s) + ")";
+    sel.appendChild(opt);
+  }
+}
+
+function pickStudent() {
+  var sel = document.getElementById("student_select");
+  if (sel.value === "") return;
+  var s = loadStudents()[parseInt(sel.value, 10)];
+  if (!s) return;
+  document.getElementById("student_id").value = s.student_id;
+  document.getElementById("student_name").value = s.name;
+  document.getElementById("student_class").value = getClassName(s);
+}
+
+function updateReport() {
+  var rows = document.getElementById("records-body").getElementsByTagName("tr");
+  var present = 0;
+  var absent = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var stat = rows[i].cells[3].textContent;
+    if (stat.indexOf("Present") !== -1) present++;
+    if (stat.indexOf("Absent") !== -1) absent++;
+  }
+  document.getElementById("present-count").textContent = present;
+  document.getElementById("absent-count").textContent = absent;
+}
+
+function renderTable() {
+  var list = loadRecords();
+  var body = document.getElementById("records-body");
+  var noRec = document.getElementById("no-records");
+  body.innerHTML = "";
+
+  if (list.length === 0) {
+    noRec.style.display = "block";
+    updateReport();
+    return;
+  }
+
+  noRec.style.display = "none";
+
+  for (var i = list.length - 1; i >= 0; i--) {
+    var r = list[i];
+    var row = body.insertRow();
+    var stClass = r.status === "Present" ? "present" : "absent";
+    row.innerHTML =
+      "<td>" + r.student_id + "</td>" +
+      "<td>" + r.student_name + "</td>" +
+      "<td>" + r.student_class + "</td>" +
+      '<td class="' + stClass + '">' + r.status + "</td>" +
+      "<td>" + r.date + "</td>" +
+      '<td><button type="button" class="delete-btn" onclick="deleteRecord(' + r.id + ')">Delete</button></td>';
+  }
+
+  updateReport();
+}
+
+function saveAttendance() {
+  var id = document.getElementById("student_id").value.trim();
+  var name = document.getElementById("student_name").value.trim();
+  var cls = document.getElementById("student_class").value.trim();
+  var stat = document.getElementById("status").value;
+  var date = document.getElementById("date").value;
+  var today = getToday();
+
+  if (!id || !name || !cls || !stat) {
+    alert("Please fill: Student ID, Full Name, Class, and Status.");
+    return;
+  }
+
+  if (name.split(/\s+/).filter(Boolean).length < 2) {
+    alert("Full name must have at least 2 words (e.g. Ali Hassan).");
+    return;
+  }
+
+  if (date !== today) {
+    document.getElementById("date").value = today;
+    alert("Date set to today: " + today);
+    date = today;
+  }
+
+  var list = loadRecords();
+  for (var j = 0; j < list.length; j++) {
+    if (list[j].student_id === id && list[j].date === date) {
+      if (!confirm("This student already has attendance today. Add again anyway?")) {
+        return;
+      }
+      break;
+    }
+  }
+
+  var record = {
+    id: new Date().getTime(),
+    student_id: id,
+    student_name: name,
+    student_class: cls,
+    status: stat,
+    date: date
+  };
+
+  try {
+    list.push(record);
+    saveRecords(list);
+  } catch (e) {
+    alert("Could not save. Open files from same folder in browser.");
+    return;
+  }
+
+  renderTable();
+  alert("Attendance saved!\n\nID: " + id + "\nName: " + name + "\nStatus: " + stat);
+}
+
+function deleteRecord(rid) {
+  if (!confirm("Delete this record?")) return;
+  var list = loadRecords();
+  var newList = [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].id !== rid) newList.push(list[i]);
+  }
+  saveRecords(newList);
+  renderTable();
+}
+
+function clearAttendanceForm() {
+  document.getElementById("student_select").value = "";
+  document.getElementById("student_id").value = "";
+  document.getElementById("student_name").value = "";
+  document.getElementById("student_class").value = "";
+  document.getElementById("status").value = "";
+  document.getElementById("date").value = getToday();
+}
+
+function isFullName(name) {
+  var parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.length >= 2 && parts.every(function(p) { return p.length >= 2; });
+}
+
+function showMsg(text, isErr) {
+  var el = document.getElementById("reg-msg");
+  el.textContent = text;
+  el.className = "msg " + (isErr ? "msg-err" : "msg-ok");
+}
+
+function renderStudents() {
+  var list = loadStudents();
+  var body = document.getElementById("students-body");
+  var empty = document.getElementById("no-students");
+  body.innerHTML = "";
+  if (list.length === 0) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  list.forEach(function(s) {
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      "<td>" + s.student_id + "</td>" +
+      "<td>" + s.name + "</td>" +
+      "<td>" + s.class + "</td>" +
+      "<td><button class='delete-btn' data-id='" + s.id + "'>Delete</button></td>";
+    body.appendChild(tr);
+  });
+}
+
+function switchTab(tab) {
+  var att = document.getElementById("attendance-section");
+  var reg = document.getElementById("register-section");
+  var btnAtt = document.getElementById("tab-attendance");
+  var btnReg = document.getElementById("tab-register");
+  if (tab === "attendance") {
+    att.style.display = "block";
+    reg.style.display = "none";
+    btnAtt.classList.add("active");
+    btnReg.classList.remove("active");
+  } else {
+    att.style.display = "none";
+    reg.style.display = "block";
+    btnReg.classList.add("active");
+    btnAtt.classList.remove("active");
+  }
+}
+
+function removeStudent(id) {
+  var list = loadStudents().filter(function(s) { return s.id !== id; });
+  saveStudents(list);
+  renderStudents();
+  loadDropdown();
+}
+
+function registerStudent() {
+  var id = document.getElementById("reg_id").value.trim();
+  var name = document.getElementById("reg_name").value.trim();
+  var cls = document.getElementById("reg_class").value.trim();
+
+  if (!id || !name || !cls) {
+    showMsg("All fields are required.", true);
+    return;
+  }
+  if (!isFullName(name)) {
+    showMsg("Full name must have at least 2 words.", true);
+    return;
+  }
+
+  var list = loadStudents();
+  if (list.some(function(s) { return s.student_id === id; })) {
+    showMsg("Student ID already exists.", true);
+    return;
+  }
+
+  list.push({ id: Date.now(), student_id: id, name: name, class: cls });
+  saveStudents(list);
+  renderStudents();
+  loadDropdown();
+  showMsg("Student registered successfully.", false);
+  document.getElementById("reg_id").value = "";
+  document.getElementById("reg_name").value = "";
+  document.getElementById("reg_class").value = "";
+}
+
+document.getElementById("tab-attendance").addEventListener("click", function() { switchTab("attendance"); });
+document.getElementById("tab-register").addEventListener("click", function() { switchTab("register"); });
+document.getElementById("btn-reg-save").addEventListener("click", registerStudent);
+document.getElementById("btn-reg-cancel").addEventListener("click", function() {
+  document.getElementById("reg_id").value = "";
+  document.getElementById("reg_name").value = "";
+  document.getElementById("reg_class").value = "";
+  document.getElementById("reg-msg").className = "msg";
+});
+document.getElementById("students-body").addEventListener("click", function(e) {
+  if (!e.target.classList.contains("delete-btn")) return;
+  if (!confirm("Delete this student?")) return;
+  removeStudent(Number(e.target.dataset.id));
+  showMsg("Student deleted.", false);
+});
+
+document.getElementById("date").value = getToday();
+loadDropdown();
+renderStudents();
+renderTable();
+window.onfocus = loadDropdown;
+</script>
+</body>
+</html>
 
